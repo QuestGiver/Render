@@ -10,9 +10,9 @@ int main()
 
 	vertex triVerts[] =
 	{
-		{{ -.5f, -.5f, 0, 1 }},
-		{{   .5f,-.5f, 0, 1 }},
-		{{    0,  .5f, 0, 1 }},
+		{{ -.5f, -.5f, 0, 1 },{0,0} },
+		{{   .5f,-.5f, 0, 1 },{0,1}},
+		{{    0,  .5f, 0, 1 },{0.5f,1} },
 
 	};
 
@@ -28,20 +28,34 @@ int main()
 	const char * mvpVert =
 		"#version 430\n"
 		"layout (location = 0) in vec4 position;\n"
+		"layout (location = 1) in vec2 uv;\n"
+		"out vec2 vUV;\n"//uv is coming in from vertex shader
 		"layout (location = 0) uniform mat4 proj;\n"
 		"layout (location = 1) uniform mat4 view;\n"
 		"layout (location = 2) uniform mat4 model;\n"
-		"void main() {gl_Position = proj * view * model * position;}";
+		"void main() {gl_Position = proj * view * model * position; vUV = uv;}";
 
 	const char * basicFrag =
 		"#version 330\n"
 		"out vec4 vertColor;\n"
 		"void main() {vertColor = vec4(1.0,0.0,0.0,1.0);}";
 
+	const char * texFrag =
+		"#version 430\n"
+		"in vec2 vUV;\n"
+		"out vec4 vertColor;\n"
+		"layout (location = 3) uniform sampler2D albedo;\n"
+		"void main() {vertColor = texture(albedo, vUV); }";
+
 
 
 	shader basicShad = makeShader(basicVert, basicFrag);
 	shader mvpShad = makeShader(mvpVert, basicFrag);
+	shader texShad = makeShader(mvpVert, texFrag);
+
+	unsigned char whitePixel[] = { 255,255,255 };
+	texture whiteTexture = makeTexture(1, 1, 3, whitePixel);
+	texture testTexture = loadTexture("Grids.png");
 
 	glm::mat4 cam_proj = glm::perspective(glm::radians(90.0f), 800.0f / 600.0f, 0.1f, 1000.0f);
 	glm::mat4 cam_view = glm::lookAt(glm::vec3(0, 0, -1), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
@@ -49,11 +63,12 @@ int main()
 
 	glm::mat4 triangle_model2 = glm::scale(glm::identity<glm::mat4>(), glm::vec3(0.5,0.5,0.5));
 
-	glm::mat4 * triArray = new glm::mat4[1000];
+	glm::mat4 * triArray = new glm::mat4[50];
 
-	for (int i = 0; i < triArray->length; i++)
+	for (int i = 0; i < triArray->length(); i++)
 	{
 		triArray[i] = glm::scale(glm::identity<glm::mat4>(), glm::vec3(0.5, 0.5, 0.5));
+		
 	}
 
 
@@ -64,13 +79,15 @@ int main()
 
 		
 
-		for (int i = 0; i < triArray->length; i++)
+		for (int i = 0; i < triArray->length(); i++)
 		{
-			triArray[i] = glm::rotate(triArray[i], glm::radians((float)i), glm::vec3(0, 1, 0));
-			setUniform(mvpShad, 0, cam_proj);
-			setUniform(mvpShad, 1, cam_view);
-			setUniform(mvpShad, 2, triArray[i]);
-			draw(mvpShad, triArray[i]);
+			triArray[i] = glm::rotate(triArray[i], glm::radians((float)i/-2), glm::vec3((i / -2), i, i));
+	
+			setUniform(texShad, 0, cam_proj);
+			setUniform(texShad, 1, cam_view);
+			setUniform(texShad, 2, triArray[i]);
+			setUniform(texShad, 3, testTexture, 0);
+			draw(texShad, triangle);
 		}
 
 
@@ -80,15 +97,16 @@ int main()
 
 
 
-		triangle_model = glm::rotate(triangle_model, glm::radians(FLT_MAX), glm::vec3(0, 1, 0));
-		setUniform(mvpShad, 0, cam_proj);
-		setUniform(mvpShad, 1, cam_view);
-		setUniform(mvpShad, 2, triangle_model);
+		triangle_model = glm::rotate(triangle_model, glm::radians(1.0f), glm::vec3(0, 1, 0));
+		setUniform(texShad, 0, cam_proj);
+		setUniform(texShad, 1, cam_view);
+		setUniform(texShad, 2, triangle_model);
+		setUniform(texShad, 3, whiteTexture, 0);
 
-		draw(mvpShad, triangle);
+		//draw(mvpShad, triangle);
 
-		setUniform(mvpShad, 2, triangle_model2);
-		draw(mvpShad, triangle);
+		setUniform(texShad, 2, triangle_model2);
+		//draw(mvpShad, triangle);
 
 	}
 

@@ -12,7 +12,7 @@ void APIENTRY errorCallback(GLenum source, GLenum type, GLuint id, GLenum severi
 	GLsizei length, const GLchar *message,
 	const void *userParam)
 {
-	fprintf(stderr, "%s", message);
+	fprintf(stderr, "%s\n", message);
 }
 
 bool context::init(int width, int height, const char * title)
